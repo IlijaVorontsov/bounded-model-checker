@@ -30,7 +30,7 @@ class BoundedModelChecker:
             self.cnf.add_clause([-latch[0]]) # latch output initialized to 0
 
     def check_sat(self) -> bool:
-        returncode = run("minisat input.txt", shell=True).returncode
+        returncode = run("MiniSat-p_v1.14/minisat input.txt", shell=True).returncode
         assert returncode in [10, 20]
         return returncode == 10 # 10 if sat, 20 if unsat
 

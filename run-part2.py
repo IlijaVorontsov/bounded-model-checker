@@ -6,7 +6,7 @@ class BMC_with_Interpolants(BoundedModelChecker):
         self.circuit = circuit
 
     def run_minisat(self) -> bool:
-        if run("~/bin/minisat input.txt -c > proof.txt", shell=True).returncode == 20: # 10 if sat, 20 if unsat
+        if run("MiniSat-p_v1.14/minisat input.txt -c > proof.txt", shell=True).returncode == 20: # 10 if sat, 20 if unsat
             run("sed -i 1,16d proof.txt", shell=True) #remove first 16 lines
             return True
         else:
