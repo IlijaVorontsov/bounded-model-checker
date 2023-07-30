@@ -15,7 +15,7 @@ RCOBJS    = $(addsuffix r,  $(COBJS))
 
 EXEC      = minisat
 
-CXX       = clang++
+CXX       = g++
 CFLAGS    = -Wall -ffloat-store -std=c++14
 COPTIMIZE = -O3
 

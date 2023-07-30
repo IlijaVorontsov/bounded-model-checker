@@ -6,3 +6,6 @@ pyvenv.cfg
 input.txt
 proof.txt
 .gitattributes
+MiniSat-p_v1.14/depend.mak
+MiniSat-p_v1.14/*.o
+MiniSat-p_v1.14/minsat
