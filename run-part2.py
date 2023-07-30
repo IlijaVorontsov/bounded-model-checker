@@ -1,68 +1,51 @@
-import argparse
-from pysat.formula import CNF
-from AigerCircuit import AigerCircuit
-import subprocess
+from run_part1 import *
 
 
-def run_minisat(input_dimacs_file):
-    # command to run minisat
-    command = f"minisat {input_dimacs_file} output.txt"
+class BMC_with_Interpolants(BoundedModelChecker):
+    def __init__(self, circuit: AigerCircuit):
+        self.circuit = circuit
 
-    process = subprocess.Popen(command, shell=True)
+    def run_minisat(self) -> bool:
+        if run("~/bin/minisat input.txt -c > proof.txt", shell=True).returncode == 20: # 10 if sat, 20 if unsat
+            run("sed -i 1,16d proof.txt", shell=True) #remove first 16 lines
+            return True
+        else:
+            return False
 
-    assert process.returncode == 0
-
-    
-    return open("output.txt", 'r')
-    
-
-
-# Returns 
-def check_model(circuit: AigerCircuit, depth: int) -> bool:
-        cnf = CNF()
-        cnf.add_clause([1]) # Aiger x_0 is always true
-
-        for latch in circuit.latches:
-            cnf.add_clause([-latch[0]]) # latch output initialized to 0
-            for i in range(depth):
-                cnf.add_clause([-variable_at(latch[0], i+1, circuit.maxvar), variable_at(latch[1], i, circuit.maxvar)])
-                cnf.add_clause([variable_at(latch[0], i+1, circuit.maxvar), -variable_at(latch[1], i, circuit.maxvar)])
+    def check_depth(self, depth: int) -> bool:
+        self.cnf = CNF()
+        self.cnf.add_clauses([1]) # Aiger x_0 is always true (DIMACS variable 1)
+        if depth == 0:
+            return self.add_initial_state()
         
+        self.add_interpolant
+        self.add_transition_system(depth)
+        self.add_output(depth)
+        
+        
+    
+    def check_model(self):
+        depth = 0
+        while self.check_depth(depth):
+            if self.check_depth(depth):
+                return depth
+            else:
+                depth += 1
 
-        # SAT if there exists input sequence such that output is true. OR over all states.
-        cnf.add_clause([variable_at(circuit.output, i, circuit.maxvar) for i in range(depth+1)])
+    def __del__(self):
+        run("rm input.txt proof.txt", shell=True)
 
-        for and_gate in circuit.ands:
-            for i in range(depth+1):
-                cnf.add_clause([variable_at(and_gate[0], i, circuit.maxvar), -variable_at(and_gate[1], i, circuit.maxvar)])
-                cnf.add_clause([variable_at(and_gate[0], i, circuit.maxvar), -variable_at(and_gate[2], i, circuit.maxvar)])
-                cnf.add_clause([-variable_at(and_gate[0], i, circuit.maxvar), variable_at(and_gate[1], i, circuit.maxvar), variable_at(and_gate[2], i, circuit.maxvar)])
-
-
-        cnf.to_dimacs()
-
-def variable_at(variable: int, time: int, maxvar) -> int:
-    if variable in [-1, 1]: # constant case
-        return variable
-    if variable < -1:
-        return variable - time*maxvar
-    elif variable > 1:
-        return variable + time*maxvar
     
     
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run a bounded model checker on the given AIGER file')
+    parser = ArgumentParser(description='Run a bounded model checker on the given AIGER file')
     parser.add_argument('filename', type=str, help='Filename of the AIGER file')
-    parser.add_argument('k', type=int, help='Number of steps to check for the safety property')
 
     args = parser.parse_args()
 
     circuit = AigerCircuit(args.filename)
-    for i in range(args.k+1):
-        proof = check_model(circuit, i)
-        if proof == None : # returns true if a sequence of inputs can be found for the output to be 1
-            print("FAIL")
-            exit()
-        print(proof)
-    print("OK")
+    if BMC_with_Interpolants(circuit).check_model():
+        print("OK")
+    else:
+        print("FAIL")

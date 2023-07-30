@@ -19,11 +19,11 @@ class AigerCircuit:
             assert len(output) == 1
             self.output = output[0]
 
-            self.ands = []
+            self.and_gates = []
             for _ in range(int(header[5])):
                 and_gate = parse_line(aigerfile)
                 assert len(and_gate) == 3
-                self.ands.append(and_gate)
+                self.and_gates.append(and_gate)
                 
     
 def parse_line(file):

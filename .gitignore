@@ -3,3 +3,5 @@ include
 lib
 pyvenv.cfg
 *__pycache__
+input.txt
+proof.txt
