@@ -33,10 +33,10 @@ def calculateInterpolant(self, b) -> List[int]:
             return labels[-1]
     
 
-def dropLiteralsNotInB(self, clause, atoms_b):
+def dropLiteralsNotInB(clause, atoms_b):
     return [literal for literal in clause if abs(literal) in atoms_b]
 
-def resolvedLiteralNotInB(self, resolved_literal, atoms_b):
+def resolvedLiteralNotInB(resolved_literal, atoms_b):
     return abs(resolved_literal) not in atoms_b
 
 def getChainParentsAndResolvants(step_string):

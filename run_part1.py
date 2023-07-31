@@ -5,9 +5,8 @@ from AigerCircuit import AigerCircuit
 
 
 class BoundedModelChecker:
-    def __init__(self, circuit: AigerCircuit, depth: int):
+    def __init__(self, circuit: AigerCircuit):
         self.circuit = circuit
-        self.depth = depth
 
         self.cnf = CNF()
         self.cnf.append([1]) # Aiger x_0 is always true (DIMACS literal 1)
@@ -16,10 +15,11 @@ class BoundedModelChecker:
             self.cnf.append([-latch[0]]) # latch output initialized to 0
 
     def add_transition_system(self, depth: int):
-        for latch in self.circuit.latches:
-            # (o^depth+1 <-> i^depth) == (-o^depth+1 | i^depth) & (o^depth+1 | -i^depth)
-            self.cnf.append([-self.literal_at(latch[0], depth+1), self.literal_at(latch[1], depth)]) 
-            self.cnf.append([self.literal_at(latch[0], depth+1), -self.literal_at(latch[1], depth)])
+        if depth > 0:
+            for latch in self.circuit.latches:
+                # (o^depth+1 <-> i^depth) == (-o^depth+1 | i^depth) & (o^depth+1 | -i^depth)
+                self.cnf.append([-self.literal_at(latch[0], depth), self.literal_at(latch[1], depth-1)]) 
+                self.cnf.append([self.literal_at(latch[0], depth), -self.literal_at(latch[1], depth-1)])
 
         for and_gate in self.circuit.and_gates:
             # (o <-> (a1 & a2)) == (-o | a1) & (-o | a2) & (o | -a1 | -a2)
@@ -43,8 +43,8 @@ class BoundedModelChecker:
         return not self.run_solver()
 
     # returns True if the model is correct, False otherwise
-    def check_model(self) -> bool:        
-        for i in range(self.depth + 1):
+    def check_model(self, depth) -> bool:        
+        for i in range(depth + 1):
             if not self.check_model_at(i):
                 return False
         return True
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     circuit = AigerCircuit(args.filename)
-    if BoundedModelChecker(circuit, args.k).check_model():
+    if BoundedModelChecker(circuit).check_model(args.k):
         print("OK")
     else:
         print("FAIL")

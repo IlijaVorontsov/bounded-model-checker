@@ -51,7 +51,8 @@ class BMC_with_Interpolants(BoundedModelChecker):
                 base_clause.append(-(abs(literal)%self.circuit.maxvar))
             else:
                 base_clause.append(abs(literal)%self.circuit.maxvar)
-        return base_clause.sort()
+        # remove duplicates and sort
+        return list(dict.fromkeys(base_clause)).sort()
 
     def __del__(self):
         run("rm input.txt proof.txt", shell=True)
