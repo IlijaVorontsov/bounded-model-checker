@@ -9,49 +9,45 @@ class BoundedModelChecker:
         self.circuit = circuit
         self.depth = depth
 
+        self.cnf = CNF()
+        self.cnf.append([1]) # Aiger x_0 is always true (DIMACS literal 1)
+        
+        for latch in self.circuit.latches:
+            self.cnf.append([-latch[0]]) # latch output initialized to 0
+
     def add_transition_system(self, depth: int):
         for latch in self.circuit.latches:
             # (o^depth+1 <-> i^depth) == (-o^depth+1 | i^depth) & (o^depth+1 | -i^depth)
-            self.cnf.add_clause([-self.literal_at(latch[0], depth+1), self.literal_at(latch[1], depth)]) 
-            self.cnf.add_clause([self.literal_at(latch[0], depth+1), -self.literal_at(latch[1], depth)])
+            self.cnf.append([-self.literal_at(latch[0], depth+1), self.literal_at(latch[1], depth)]) 
+            self.cnf.append([self.literal_at(latch[0], depth+1), -self.literal_at(latch[1], depth)])
 
         for and_gate in self.circuit.and_gates:
             # (o <-> (a1 & a2)) == (-o | a1) & (-o | a2) & (o | -a1 | -a2)
-            self.cnf.add_clause([-self.literal_at(and_gate[0], depth), self.literal_at(and_gate[1], depth)])  
-            self.cnf.add_clause([-self.literal_at(and_gate[0], depth), self.literal_at(and_gate[2], depth)])
-            self.cnf.add_clause([self.literal_at(and_gate[0], depth), -self.literal_at(and_gate[1], depth), -self.literal_at(and_gate[2], depth)])
+            self.cnf.append([-self.literal_at(and_gate[0], depth), self.literal_at(and_gate[1], depth)])  
+            self.cnf.append([-self.literal_at(and_gate[0], depth), self.literal_at(and_gate[2], depth)])
+            self.cnf.append([self.literal_at(and_gate[0], depth), -self.literal_at(and_gate[1], depth), -self.literal_at(and_gate[2], depth)])   
 
-    def add_output(self, depth: int):
-        # o^0 | o^1 | ... | o^depth
-        self.cnf.add_clause([self.literal_at(self.circuit.output, i) for i in range(depth+1)]) 
-
-    def add_initial_state(self):
-        for latch in self.circuit.latches:
-            self.cnf.add_clause([-latch[0]]) # latch output initialized to 0
-
-    def check_sat(self) -> bool:
-        returncode = run("MiniSat-p_v1.14/minisat input.txt", shell=True).returncode
+    def run_solver(self) -> bool:
+        returncode = run("MiniSat-p_v1.14/minisat input.txt > /dev/null", shell=True).returncode
         assert returncode in [10, 20]
         return returncode == 10 # 10 if sat, 20 if unsat
 
-    def check_depth(self, depth: int) -> bool:
+    def check_model_at(self, depth: int) -> bool:
         self.add_transition_system(depth)
-        tmp_cnf = self.cnf.copy()
-        tmp_cnf.add_output(depth)
+
+        tmp_cnf = self.cnf.copy() # copy to incrementally add clauses only output clause changes rest can be appended
+        # o^0 | o^1 | ... | o^depth
+        tmp_cnf.append([self.literal_at(self.circuit.output, i) for i in range(depth+1)])     
         
         tmp_cnf.to_file("input.txt")
-        return self.check_sat()
-    
+        return not self.run_solver()
+
     # returns True if the model is correct, False otherwise
-    def check_model(self) -> bool:
-        self.cnf = CNF()
-        self.cnf.add_clauses([1]) # Aiger x_0 is always true (DIMACS literal 1)
-        self.add_initial_state()
-        
+    def check_model(self) -> bool:        
         for i in range(self.depth + 1):
-            if self.check_depth(i):
+            if not self.check_model_at(i):
                 return False
-            return True
+        return True
 
     def literal_at(self, literal: int, depth: int) -> int:
         if literal in [-1, 1]: # constant case
@@ -60,6 +56,9 @@ class BoundedModelChecker:
             return literal - depth*self.circuit.maxvar
         elif literal > 1:
             return literal + depth*self.circuit.maxvar
+    
+    def __del__(self):
+        run("rm input.txt", shell=True)
         
 
 if __name__ == '__main__':
@@ -70,7 +69,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     circuit = AigerCircuit(args.filename)
-    if BoundedModelChecker(circuit).check_model(args.k):
+    if BoundedModelChecker(circuit, args.k).check_model():
         print("OK")
     else:
         print("FAIL")
