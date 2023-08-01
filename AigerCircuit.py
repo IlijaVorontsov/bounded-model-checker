@@ -34,7 +34,11 @@ def parse_line(file):
 # All other variables are shifted by 1.
 def parse_variable(number_string: str) -> int:
     number = int(number_string)
-    if number%2 == 0:
+    if number == 0:
+        return -1
+    elif number == 1:
+        return 1
+    elif number%2 == 0:
         return number//2 + 1
     else:
-        return -number//2 - 1
+        return -(number//2) - 1
