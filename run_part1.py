@@ -51,9 +51,9 @@ class BoundedModelChecker:
         if literal in [-1, 1]: # constant case
             return literal
         if literal < -1:
-            return literal - depth*(self.circuit.maxvar - 1)
+            return literal - depth*(self.circuit.maxvar)
         elif literal > 1:
-            return literal + depth*(self.circuit.maxvar + 1)
+            return literal + depth*(self.circuit.maxvar)
         
 
 if __name__ == '__main__':

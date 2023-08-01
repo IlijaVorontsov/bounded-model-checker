@@ -2,7 +2,7 @@ class AigerCircuit:
     def __init__(self, filename: str):
         with open(filename, "r") as aigerfile:
             header = aigerfile.readline().split()
-            self.maxvar = int(header[1])
+            self.maxvar = int(header[1]) + 1 # +1 because of constant DIMACS variable 1
 
             # skip over inputs
             for _ in range(int(header[2])):
