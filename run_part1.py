@@ -73,8 +73,7 @@ class BoundedModelChecker:
         return sign*atom_at_depth
         
     def __del__(self):
-        pass
-        #run("rm input.txt proof.txt", shell=True)
+        run("rm input.txt proof.txt", shell=True)
         
 
 if __name__ == '__main__':
