@@ -33,9 +33,3 @@ make
 chmod +x minisat
 ```
 
-
-## TODO:
-- [x] Implement bounded model checker
-- [x] Check what output the benchmarks should have
-- [ ] Test own model checker on benchmarks
-
